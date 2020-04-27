@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context="com.hello.kaiser.customcamera.MainActivity">
+
+    <TextView
+        android:id="@+id/tv_messages"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_above="@+id/show_image"
+        android:layout_marginBottom="10dp"
+        android:visibility="invisible"
+        android:gravity="center"
+        android:textColor="@color/colorBlack"
+        android:text="@string/take_picture_result"/>
+    <ImageView
+        android:id="@+id/show_image"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_centerInParent="true"
+        android:src="@mipmap/logo" />
+    <ImageView
+        android:id="@+id/btn_take_pic"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/show_image"
+        android:layout_centerHorizontal="true"
+        android:src="@drawable/ic_photo_camera_black_48dp" />
+    <ImageView
+        android:id="@+id/btn_photo_save"
+        android:layout_width="45dp"
+        android:layout_height="45dp"
+        android:visibility="invisible"
+        android:layout_below="@+id/show_image"
+        android:layout_toRightOf="@+id/btn_take_pic"
+        android:layout_marginLeft="10dp"
+        android:src="@drawable/ic_save_black_24dp"/>
+    <ImageView
+        android:id="@+id/btn_photo_del"
+        android:layout_width="45dp"
+        android:layout_height="45dp"
+        android:visibility="invisible"
+        android:layout_below="@+id/show_image"
+        android:layout_toLeftOf="@+id/btn_take_pic"
+        android:layout_marginRight="10dp"
+        android:src="@drawable/ic_delete_black_24dp"/>
+
+</RelativeLayout>

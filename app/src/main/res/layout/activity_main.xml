@@ -48,4 +48,12 @@
         android:layout_marginRight="10dp"
         android:src="@drawable/ic_delete_black_24dp"/>
 
+    <TextView
+        android:id="@+id/tv_ocr_result"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/btn_take_pic"
+        android:gravity="center"
+        android:layout_marginTop="20dp"
+        android:text="Result"/>
 </RelativeLayout>

@@ -21,7 +21,10 @@ import android.widget.Toast;
 import com.googlecode.tesseract.android.TessBaseAPI;
 
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
@@ -37,16 +40,28 @@ public class MainActivity extends AppCompatActivity {
     private ImageView mBtnPic;
     private ImageView mShowImage;
     String  imageFilePath;
+    private TextView ocrResult;
 
     private ImageView photoSave, photoDel;
     private TextView  messages;
 
+    private Bitmap bitmap;
+
     private boolean isCameraPermission = false;
 
     //tess two (ORC) 語言包放在/mnt/sdcard/Tess/tessdata目錄下
-    public static String TESSBASE_PATH = Environment.getExternalStorageDirectory().toString() + "/Tess";
+    public static String TESS_DATA = "/tessdata";
+    public static String DATA_PATH = Environment.getExternalStorageDirectory().toString() + "/Tess";
     private TessBaseAPI tessBaseAPI;
-    private static String lang = "eng";
+
+    //20200428
+    private static final String DATAPATH = Environment.getExternalStorageDirectory().getAbsolutePath() + File.separator;
+    private static final String tessdata = DATAPATH + File.separator + "tessdata";
+    private static final String DEFAULT_LANGUAGE = "chi_tra";
+    private static final String DEFAULT_LANGUAGE_NAME = DEFAULT_LANGUAGE + ".traineddata";
+    private static final String LANGUAGE_PATH = tessdata + File.separator + DEFAULT_LANGUAGE_NAME;
+
+    private String result = "No Result !!";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -58,7 +73,6 @@ public class MainActivity extends AppCompatActivity {
         initListener();
         //Tess two
         tessBaseAPI = new TessBaseAPI();
-
     }
 
     private void initView() {
@@ -68,6 +82,8 @@ public class MainActivity extends AppCompatActivity {
         photoSave = (ImageView) findViewById(R.id.btn_photo_save);
         photoDel = (ImageView) findViewById(R.id.btn_photo_del);
         messages = (TextView) findViewById(R.id.tv_messages);
+
+        ocrResult = (TextView) findViewById(R.id.tv_ocr_result);
     }
 
     private void initListener() {
@@ -87,6 +103,8 @@ public class MainActivity extends AppCompatActivity {
                 isCameraPermission = true;
                 //do something
                 Toast.makeText(this, "感謝賜予權限！", Toast.LENGTH_SHORT).show();
+                Log.d(TAG, "onRequestPermissionsResult: copyToSD");
+                copyToSD(LANGUAGE_PATH, DEFAULT_LANGUAGE_NAME); //將自庫寫入設備中
                 startActivityForResult(new Intent(MainActivity.this, TakePicActivity.class), GetPhotoCode);
             }
             //假如拒絕了
@@ -162,15 +180,21 @@ public class MainActivity extends AppCompatActivity {
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
         if (requestCode == GetPhotoCode) {
-            Log.d(TAG, "onActivityResult: " + imageFilePath);
-            setPic(imageFilePath); //拍完後的照片顯示
-            prepareTessdata(); //check 語言包是否存在
-            startOCR(imageFilePath);
-            //顯示刪除 or 存檔 (根據辨識特定字元)
+            copyToSD(LANGUAGE_PATH, DEFAULT_LANGUAGE_NAME); //語言包check
+
+            setPic(imageFilePath);               //拍完後的照片顯示
+
+            //OCRResult(bitmap);
             messages.setVisibility(View.VISIBLE);
             mBtnPic.setVisibility(View.INVISIBLE);
 
-            photoSave.setVisibility(View.VISIBLE);
+            //根據有辨識到特定字元才會顯示存檔icon
+            if (result.contains(getString(R.string.key_word))){
+                Log.d(TAG, "onActivityResult: ??");
+                photoSave.setVisibility(View.VISIBLE);
+            }
+
+            //儲存照片
             photoSave.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View view) {
@@ -178,6 +202,7 @@ public class MainActivity extends AppCompatActivity {
                     openCamera();  //return open camera and take picture
                 }
             });
+
             photoDel.setVisibility(View.VISIBLE);
             photoDel.setOnClickListener(new View.OnClickListener() {
                 @Override
@@ -189,25 +214,100 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    private void startOCR(String imageFilePath) {
-        Bitmap bmp = BitmapFactory.decodeResource(this.getResources(), R.mipmap.image_1);
-        tessBaseAPI.init(TESSBASE_PATH, "chi_tra"); //中文繁體字庫
-        tessBaseAPI.setImage(bmp);
-        String result = "No Result !!";
-        result = tessBaseAPI.getUTF8Text();
-        tessBaseAPI.end();
+    //語言包copy到設備端 (assets的中文識別字庫檔創建到設備端,不然系統會crash)
+    private void copyToSD(String path, String name) {
+//        Log.d(TAG, "copyToSD: " + path);
+//        Log.d(TAG, "copyToSD: " + name);
 
-        Log.d(TAG, "startOCR Result : " + result);
+        //如果存在就删掉
+        File f = new File(path);
+        if (f.exists()){
+            f.delete();
+        }
+        if (!f.exists()){
+            File p = new File(f.getParent());
+            if (!p.exists()){
+                p.mkdirs();
+            }
+            try {
+                f.createNewFile();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+
+        InputStream is=null;
+        OutputStream os=null;
+        try {
+            is = this.getAssets().open(name);
+            File file = new File(path);
+            os = new FileOutputStream(file);
+            byte[] bytes = new byte[2048];
+            int len = 0;
+            while ((len = is.read(bytes)) != -1) {
+                os.write(bytes, 0, len);
+            }
+            os.flush();
+        } catch (IOException e) {
+            e.printStackTrace();
+        } finally {
+            try {
+                if (is != null)
+                    is.close();
+                if (os != null)
+                    os.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+
     }
 
+    private void OCRResult(Bitmap bitmap) {
+//        Bitmap bmp = BitmapFactory.decodeResource(this.getResources(), R.mipmap.image_1);
+        tessBaseAPI.init(DATAPATH, DEFAULT_LANGUAGE);  //中文辨識
+        tessBaseAPI.setImage(bitmap);
+        result = tessBaseAPI.getUTF8Text();
+        tessBaseAPI.end();
+        ocrResult.setText(result);  //辨識後結果顯示
+        Log.d(TAG, "OCRResult Result : " + result);
+    }
+
+
+    //檢查語言包是否存在設備的sdcard內
     private void prepareTessdata() {
-        File dir = getExternalFilesDir(TESSBASE_PATH);
-        if (!dir.exists()){
-            Toast.makeText(MainActivity.this, "The Folder" + dir.getPath() + "was not created", Toast.LENGTH_SHORT).show();
-        }else{
-            Log.d(TAG, "prepareTessdata: ");
+        try {
+            File dir = getExternalFilesDir(TESS_DATA);
+            if (!dir.exists()) {
+                if (!dir.mkdir()) {
+                    Toast.makeText(MainActivity.this, "The Folder" + dir.getPath() + "was not created", Toast.LENGTH_SHORT).show();
+                }
+            }
+
+            //AssetsCopy(dir);
+
+        }catch (Exception e){
+            Log.d(TAG, "prepareTessdata: " + e.getMessage());
         }
-        
+    }
+
+    private void AssetsCopy(File dir) throws IOException {
+        String fileList[] = getAssets().list("");
+        for (String fileName : fileList){
+            String pathToDataFile = dir + "/" + fileName;
+            if (!new File(pathToDataFile).exists())
+            {
+                InputStream in = getAssets().open(fileName);
+                OutputStream out = new FileOutputStream(pathToDataFile);
+                byte[] buff = new byte[1024];
+                int len;
+                while ((len = in.read(buff)) > 0 ){
+                    out.write(buff,0, len);
+                }
+                in.close();
+                out.close();
+            }
+        }
     }
 
     private void delPic(String imageFilePath) {
@@ -239,8 +339,11 @@ public class MainActivity extends AppCompatActivity {
         bmOptions.inSampleSize = scaleFactor;
         bmOptions.inPurgeable = true;
 
-        Bitmap bitmap = BitmapFactory.decodeFile(mCurrentPhotoPath, bmOptions);
+//        Bitmap bitmap = BitmapFactory.decodeFile(mCurrentPhotoPath, bmOptions);
+        bitmap = BitmapFactory.decodeFile(mCurrentPhotoPath, bmOptions);
         mShowImage.setImageBitmap(bitmap);
+
+        OCRResult(bitmap); //開始識別
     }
 
     //back - key Listener

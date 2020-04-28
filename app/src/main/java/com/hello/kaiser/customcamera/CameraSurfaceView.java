@@ -233,7 +233,7 @@ public class CameraSurfaceView extends SurfaceView implements SurfaceHolder.Call
                 Matrix m = new Matrix();
                 int height = bm.getHeight();
                 int width = bm.getWidth();
-                m.setRotate(90);  //原先是90
+                m.setRotate(270);  //原先是90
                 //旋轉後的圖片
                 bitmap = Bitmap.createBitmap(bm, 0, 0, width, height, m, true);
 
@@ -257,10 +257,10 @@ public class CameraSurfaceView extends SurfaceView implements SurfaceHolder.Call
                 e.printStackTrace();
             } finally {
                 try {
-                    bos.flush();           //輸出
-                    bos.close();          //關閉
-                    bm.recycle();        // 回收bitmap
-                    mCamera.stopPreview();  // 關閉預覽
+                    bos.flush();              //輸出
+                    bos.close();              //關閉
+                    bm.recycle();             // 回收bitmap
+                    mCamera.stopPreview();    // 關閉預覽
                     activity.setResult(Activity.RESULT_OK);
                     activity.finish();
 //                    mCamera.startPreview();  // 開啟預覽

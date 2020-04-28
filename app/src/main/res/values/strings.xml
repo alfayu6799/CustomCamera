@@ -4,4 +4,5 @@
     <string name="take_picture_result">此為拍照結果預覽尚未儲存檔案</string>
     <string name="picture_save_ok">照片存檔成功!!</string>
     <string name="picture_del_ok">照片刪除成功!!</string>
+    <string name="key_word">電子發票</string>
 </resources>
